@@ -1,14 +1,15 @@
 from __future__ import annotations 
 
-from typing import Union, Optional, TypeAlias, Sequence, List
+from typing import Union, Optional, TypeAlias, Sequence, List, Type
 from typing_extensions import TypeAlias
+from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
 from numpy import array, float64
 
 from minitorch import functions
-from storage import TensorData
+from minitorch import Function, Context
 
 
 Storage: TypeAlias = npt.NDArray[np.float64]
@@ -22,62 +23,82 @@ UserShape: TypeAlias = Sequence[int]
 UserStrides: TypeAlias = Sequence[int]
 
 
+@dataclass
+class History:
+
+    fn: Optional[Type[Function]] = None
+    ctx: Optional[Context] = None
+    inputs: Optional[Sequence[Tensor]] = () 
+
+
 class Tensor:
-    def __init__(self, data: TensorData) -> None:
-        self._tensor = data
 
-    def _ensure_tensor(self, b) -> Tensor:
-        "Turns a python number into a tensor with the same backend."
+    def __init__(self, data, history: History = History()) -> None:
+        self.data = np.array(data)
+        self.history = history
+        self.grad = 0
 
-        if isinstance(b, Tensor):
-            b = Tensor.make([b], (1,), backend=self.backend)
-        return b
+    def __add__(self, other) -> Tensor:
+        return functions.Add.apply(self, other)
 
-    @staticmethod
-    def make(
-        storage: Union[Storage, List[float]],
-        shape: UserShape,
-        strides: Optional[UserStrides] = None,
-        # backend: TensorBackend
-    ) -> Tensor:
-        "Create a new tensor from data"
-        return Tensor(TensorData(storage, shape, strides))
+    def __matmul__(self, other):
+        return functions.MatMul.apply(self, other)
 
-    
-    def __add__(self, b) -> Tensor:
-        return functions.Add.apply(self, self._ensure_tensor(b))
+    def __mul__(self, other):
+        return functions.Mul.apply(self, other)
 
+    def __pow__(self, power):
+        return functions.Pow.apply(self, power)
 
-    def __sub__(self, b) -> Tensor:
-        return Add.apply(self, -self._ensure_tensor(b))
+    """ Handle other use cases using base operations. """
+   
+    def __neg__(self): # -self
+        return self * -1
 
-    def __mul__(self, b) -> Tensor:
-        return Mul.apply(self, self._ensure_tensor(b))
+    def __radd__(self, other): # other + self
+        return self + other
 
-    def __truediv__(self, b) -> Tensor:
-        return Mul.apply(self, Inv.apply(self._ensure_tensor(b)))
+    def __sub__(self, other): # self - other
+        return self + (-other)
 
-    def __rtruediv__(self, b) -> Tensor:
-        return Mul.apply(self._ensure_tensor(b), Inv.apply(self))
+    def __rsub__(self, other): # other - self
+        return other + (-self)
 
-    def __matmul__(self, b: Tensor) -> Tensor:
-        "Not used until Module 3"
-        return MatMul.apply(self, b)
+    def __rmul__(self, other): # other * self
+        return self * other
 
-    def __lt__(self, b) -> Tensor:
-        return LT.apply(self, self._ensure_tensor(b))
+    def __truediv__(self, other): # self / other
+        return self * other**-1
 
-    def __eq__(self, b) -> Tensor:  # type: ignore[override]
-        return EQ.apply(self, self._ensure_tensor(b))
+    def __rtruediv__(self, other): # other / self
+        return other * self**-1
 
-    def __gt__(self, b) -> Tensor:
-        return LT.apply(self._ensure_tensor(b), self)
+    def __repr__(self):
+        return f"Tensor(data={self.data}))"
 
-    def __neg__(self) -> Tensor:
-        return Neg.apply(self)
+    def backward(self):
+        from minitorch.autodiff import topological_sort
+        order = topological_sort(self)
 
-    def __radd__(self, b) -> Tensor:
-        return self + b
+        def backpropagate(variable: Tensor, deriv) -> None:
+            """
+            Runs backpropagation on the computation graph in order to
+            compute derivatives for the leave nodes.
 
-    def __rmul__(self, b) -> Tensor:
-        return self * b
+            Args:
+                variable: The right-most variable
+                deriv  : Its derivative that we want to propagate backward to the leaves.
+
+            No return. Should write to its results to the derivative values of each leaf through `accumulate_derivative`.
+            """
+            fn = variable.history.fn
+            ctx = variable.history.ctx
+            deriv = fn._backward(ctx, deriv)
+
+        for v in order.pop(-1).history.inputs:
+            self.grad = np.ones(v.data.shape)
+            backpropagate(v, self.grad)
+        
+        for v in reversed(order):
+            backpropagate(v, self.grad)
+
