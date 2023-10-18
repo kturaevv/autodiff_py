@@ -56,7 +56,7 @@ class Function(FunctionInterface):
                 scalars.append(babytorch.Scalar(v))
 
         ctx = Context()
-        print(raw_vals)
+        
         forward_data = cls._forward(ctx, *raw_vals)
         history = babytorch.History(cls, ctx, scalars)
         return babytorch.Scalar(data = forward_data, history = history)
@@ -96,40 +96,34 @@ class Pow(Function):
 
 
 class Sigmoid(Function):
-    def forward(ctx, a, b):
-        pass
+    def forward(ctx: Context, a: float, b: float) -> float:
+        ctx.save_for_backward(a, b)
 
-    def backward(ctx, b):
+    def backward(ctx: Context, d_grad):
         pass
 
 
 class ReLU(Function):
-    def forward(ctx, a, b):
-        pass
+    def forward(ctx: Context, a: float, b: float) -> float:
+        ctx.save_for_backward(a, b)
 
-    def backward(ctx, b):
+    def backward(ctx: Context, d_grad):
         pass
 
 
 class Log(Function):
-    def forward(ctx, a, b):
-        pass
+    def forward(ctx: Context, a: float, b: float) -> float:
+        ctx.save_for_backward(a, b)
 
-    def backward(ctx, b):
+    def backward(ctx: Context, d_grad):
         pass
 
 
 class Exp(Function):
-    def forward(ctx, a, b):
+    def forward(ctx: Context, a: float, b: float) -> float:
+        ctx.save_for_backward(a, b)
+
+    def backward(ctx: Context, d_grad):
         pass
 
-    def backward(ctx, b):
-        pass
 
-
-class Sum(Function):
-    def forward(ctx, a, b):
-        pass
-
-    def backward(ctx, b):
-        pass

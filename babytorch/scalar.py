@@ -17,7 +17,7 @@ class History:
 
 class Scalar:
    
-    def __init__(self, data, history: History = History()) -> None:
+    def __init__(self, data, history: History = History(), *args, **kwargs) -> None:
         self.data = data
         self.history = history
         self.grad = 0
