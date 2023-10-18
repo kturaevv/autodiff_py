@@ -3,8 +3,9 @@ from __future__ import annotations
 from typing import Optional, Sequence, Type, Iterable
 from dataclasses import dataclass
 
-from minitorch import functions
-from minitorch.functions import Function, Context
+from babytorch import functions
+from babytorch.functions import Function, Context
+from babytorch.autodiff import backpropagate
 
 
 @dataclass
@@ -80,7 +81,6 @@ class Scalar:
         return zip(h.inputs, grads)
 
     def backward(self):
-        from minitorch.autodiff import topological_sort, backpropagate
         self.grad = 1 
         backpropagate(self, self.grad)
 

@@ -4,8 +4,8 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-import minitorch
-from minitorch.autodiff import Context
+import babytorch
+from babytorch.autodiff import Context
 
 
 def wrap_tuple(x):  # type: ignore
@@ -48,18 +48,18 @@ class Function(FunctionInterface):
         raw_vals = []
         scalars = []
         for v in values:
-            if isinstance(v, minitorch.Scalar):
+            if isinstance(v, babytorch.Scalar):
                 raw_vals.append(v.data)
                 scalars.append(v)
             else:
                 raw_vals.append(v)
-                scalars.append(minitorch.Scalar(v))
+                scalars.append(babytorch.Scalar(v))
 
         ctx = Context()
         print(raw_vals)
         forward_data = cls._forward(ctx, *raw_vals)
-        history = minitorch.History(cls, ctx, scalars)
-        return minitorch.Scalar(data = forward_data, history = history)
+        history = babytorch.History(cls, ctx, scalars)
+        return babytorch.Scalar(data = forward_data, history = history)
 
 
 class Add(Function):

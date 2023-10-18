@@ -1,3 +1,3 @@
-from minitorch.functions import *
-from minitorch.autodiff import *
-from minitorch.scalar import *
+from babytorch.functions import *
+from babytorch.autodiff import *
+from babytorch.scalar import *

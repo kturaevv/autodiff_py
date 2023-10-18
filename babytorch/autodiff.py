@@ -27,12 +27,14 @@ def topological_sort(v: Scalar) -> Iterable[Scalar]:
     visited = set()
 
     def build_topological_order(v: Scalar):
-        if v not in visited and not v.is_leaf():
-            visited.add(v)
-            for child in v.parents:
-                build_topological_order(child)
-            order.append(v)
-    
+        if v in visited or v.is_leaf():
+            return
+
+        visited.add(v)
+        for p in v.parents:
+            build_topological_order(p)
+        order.append(v)
+
     build_topological_order(v)
     return reversed(order)
 
