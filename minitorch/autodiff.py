@@ -3,20 +3,55 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, List, Optional, Sequence, Tuple, Type, Union
 
-# from minitorch import Tensor
+from typing_extensions import Protocol
 
-def topological_sort(v):
-    # topological order all of the children in the graph
+
+class Scalar(Protocol):
+
+    @property
+    def id(self) -> int: ...
+    @property
+    def parents(self) -> Iterable[Scalar]: ...
+    
+    def accumulate_grad(self, d_x) -> None: ...
+
+    def is_leaf(self) -> bool: ...
+    
+    def chain_rule(self, deriv) -> Iterable[Tuple[Scalar, Any]]: ...
+
+    def backward(self): ...
+
+
+def topological_sort(v: Scalar) -> Iterable[Scalar]:
     order = []
     visited = set()
-    def build_topological_order(v):
-        if v not in visited:
+
+    def build_topological_order(v: Scalar):
+        if v not in visited and not v.is_leaf():
             visited.add(v)
-            for child in v.history.inputs:
+            for child in v.parents:
                 build_topological_order(child)
             order.append(v)
+    
     build_topological_order(v)
-    return order
+    return reversed(order)
+
+
+def backpropagate(variable: Scalar, deriv) -> None:
+    grad_dict = {}
+    grad_dict[variable.id] = deriv
+    order = topological_sort(variable)
+
+    for node in order:
+        d_out = grad_dict[node.id]
+        chain = node.chain_rule(d_out)
+        for var, grad in chain:
+            if var.is_leaf():
+                var.accumulate_grad(grad)
+            elif var.id in grad_dict:
+                grad_dict[var.id] += grad 
+            else:
+                grad_dict[var.id] = grad
 
 
 @dataclass
