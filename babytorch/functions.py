@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import math
 
 import numpy as np
 
 import babytorch
+from babytorch import operations
 from babytorch.autodiff import Context
 
 
@@ -95,35 +97,52 @@ class Pow(Function):
         return ( power * data ** (power - 1) ) * d_grad 
 
 
-class Sigmoid(Function):
-    def forward(ctx: Context, a: float, b: float) -> float:
-        ctx.save_for_backward(a, b)
+class Exp(Function):
+    def forward(ctx: Context, a: float) -> float:
+        ctx.save_for_backward(a)
+        return math.exp(a)
 
     def backward(ctx: Context, d_grad):
-        pass
-
-
-class ReLU(Function):
-    def forward(ctx: Context, a: float, b: float) -> float:
-        ctx.save_for_backward(a, b)
-
-    def backward(ctx: Context, d_grad):
-        pass
+        a = ctx.saved_tensors
+        return a * d_grad
 
 
 class Log(Function):
-    def forward(ctx: Context, a: float, b: float) -> float:
-        ctx.save_for_backward(a, b)
+    def forward(ctx: Context, a: float) -> float:
+        ctx.save_for_backward(a)
+        return math.log(a + 1e-6)
 
     def backward(ctx: Context, d_grad):
-        pass
+        a = ctx.saved_tensors
+        return 1.0 / (a * math.log(d_grad))
 
 
-class Exp(Function):
-    def forward(ctx: Context, a: float, b: float) -> float:
-        ctx.save_for_backward(a, b)
+class Tanh(Function):
+
+    def forward(ctx: Context, a: float) -> float:
+        ctx.save_for_backward(a)
+        return operations.tanh(a)
 
     def backward(ctx: Context, d_grad):
-        pass
+        a = ctx.saved_tensors
+        return 1.0 - (operations.tanh(a) ** 2)
 
 
+class Sigmoid(Function):
+    def forward(ctx: Context, a: float) -> float:
+        ctx.save_for_backward(a)
+        return 1.0 / (1.0 + math.exp(-1 * a))
+
+    def backward(ctx: Context, d_grad):
+        a = ctx.saved_tensors
+        return a * (1 - a) * d_grad
+
+
+class ReLU(Function):
+    def forward(ctx: Context, a: float) -> float:
+        ctx.save_for_backward(a,)
+        return 0 if a < 0 else a
+
+    def backward(ctx: Context, d_grad):
+        a = ctx.saved_tensors
+        return 0 if a <= 0 else d_grad 
