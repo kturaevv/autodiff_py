@@ -25,17 +25,17 @@ def unwrap_tuple(x):  # type: ignore
 
 
 class FunctionInterface(ABC):
+    @abstractmethod
+    def forward(*args):
+        ...
 
     @abstractmethod
-    def forward(*args): ...
-
-    @abstractmethod
-    def backward(*args): ...
+    def backward(*args):
+        ...
 
 
 # Constructors
 class Function(FunctionInterface):
-
     @classmethod
     def _forward(cls, ctx: Context, *vals):
         return cls.forward(ctx, *vals)
@@ -43,7 +43,7 @@ class Function(FunctionInterface):
     @classmethod
     def _backward(cls, ctx: Context, d_grad):
         return wrap_tuple(cls.backward(ctx, d_grad))
-    
+
     @classmethod
     def apply(cls, *values):
         # Ensure the other one is a Tensor
@@ -58,43 +58,40 @@ class Function(FunctionInterface):
                 scalars.append(babytorch.Scalar(v))
 
         ctx = Context()
-        
+
         forward_data = cls._forward(ctx, *raw_vals)
         history = babytorch.History(cls, ctx, scalars)
-        return babytorch.Scalar(data = forward_data, history = history)
+        return babytorch.Scalar(data=forward_data, history=history)
 
 
 class Add(Function):
-    
     def forward(ctx: Context, a, b) -> np.ndarray:
-        ctx.save_for_backward(a,b)
+        ctx.save_for_backward(a, b)
         return a + b
-    
+
     def backward(ctx: Context, d_grad):
         a, b = ctx.saved_tensors
-        return d_grad, d_grad 
+        return d_grad, d_grad
 
 
 class Mul(Function):
-
     def forward(ctx: Context, a, b) -> np.ndarray:
         ctx.save_for_backward(a, b)
         return a * b
 
     def backward(ctx: Context, d_grad):
         a, b = ctx.saved_tensors
-        return b * d_grad, a * d_grad 
+        return b * d_grad, a * d_grad
 
 
 class Pow(Function):
-
     def forward(ctx: Context, a, b) -> np.ndarray:
         ctx.save_for_backward(a, b)
-        return a ** b
+        return a**b
 
     def backward(ctx: Context, d_grad):
-        data, power = ctx.saved_tensors 
-        return ( power * data ** (power - 1) ) * d_grad 
+        data, power = ctx.saved_tensors
+        return (power * data ** (power - 1)) * d_grad
 
 
 class Exp(Function):
@@ -118,7 +115,6 @@ class Log(Function):
 
 
 class Tanh(Function):
-
     def forward(ctx: Context, a: float) -> float:
         ctx.save_for_backward(a)
         return operations.tanh(a)
@@ -140,9 +136,11 @@ class Sigmoid(Function):
 
 class ReLU(Function):
     def forward(ctx: Context, a: float) -> float:
-        ctx.save_for_backward(a,)
+        ctx.save_for_backward(
+            a,
+        )
         return 0 if a < 0 else a
 
     def backward(ctx: Context, d_grad):
         a = ctx.saved_tensors
-        return 0 if a <= 0 else d_grad 
+        return 0 if a <= 0 else d_grad

@@ -1,25 +1,31 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Iterable, Tuple
 
 from typing_extensions import Protocol
 
 
 class Scalar(Protocol):
+    @property
+    def id(self) -> int:
+        ...
 
     @property
-    def id(self) -> int: ...
-    @property
-    def parents(self) -> Iterable[Scalar]: ...
-    
-    def accumulate_grad(self, d_x) -> None: ...
+    def parents(self) -> Iterable[Scalar]:
+        ...
 
-    def is_leaf(self) -> bool: ...
-    
-    def chain_rule(self, deriv) -> Iterable[Tuple[Scalar, Any]]: ...
+    def accumulate_grad(self, d_x) -> None:
+        ...
 
-    def backward(self): ...
+    def is_leaf(self) -> bool:
+        ...
+
+    def chain_rule(self, deriv) -> Iterable[Tuple[Scalar, Any]]:
+        ...
+
+    def backward(self):
+        ...
 
 
 def topological_sort(v: Scalar) -> Iterable[Scalar]:
@@ -51,7 +57,7 @@ def backpropagate(variable: Scalar, deriv) -> None:
             if var.is_leaf():
                 var.accumulate_grad(grad)
             elif var.id in grad_dict:
-                grad_dict[var.id] += grad 
+                grad_dict[var.id] += grad
             else:
                 grad_dict[var.id] = grad
 
