@@ -24,7 +24,7 @@ class Scalar:
     def __add__(self, other) -> Scalar:
         return functions.Add.apply(self, other)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> Scalar:
         return functions.Mul.apply(self, other)
 
     def __pow__(self, power):
@@ -32,25 +32,25 @@ class Scalar:
 
     """ Handle other use cases using base operations. """
 
-    def __neg__(self):  # -self
+    def __neg__(self) -> Scalar:  # -self
         return self * -1
 
-    def __radd__(self, other):  # other + self
+    def __radd__(self, other) -> Scalar:  # other + self
         return self + other
 
-    def __sub__(self, other):  # self - other
+    def __sub__(self, other) -> Scalar:  # self - other
         return self + (-other)
 
-    def __rsub__(self, other):  # other - self
+    def __rsub__(self, other) -> Scalar:  # other - self
         return other + (-self)
 
-    def __rmul__(self, other):  # other * self
+    def __rmul__(self, other) -> Scalar:  # other * self
         return self * other
 
-    def __truediv__(self, other):  # self / other
+    def __truediv__(self, other) -> Scalar:  # self / other
         return self * other**-1
 
-    def __rtruediv__(self, other):  # other / self
+    def __rtruediv__(self, other) -> Scalar:  # other / self
         return other * self**-1
 
     def __repr__(self):
@@ -79,7 +79,7 @@ class Scalar:
         grads = h.fn._backward(h.ctx, deriv)
         return zip(h.inputs, grads)
 
-    def backward(self):
+    def backward(self) -> None:
         self.grad = 1
         backpropagate(self, self.grad)
 
@@ -91,3 +91,21 @@ class Scalar:
     @property
     def id(self) -> int:
         return id(self)
+    
+    # funcs
+   
+    def log(self) -> Scalar:
+        return functions.Log.apply(self)
+
+    def exp(self) -> Scalar:
+        return functions.Exp.apply(self)
+
+    def sigmoid(self) -> Scalar:
+        return functions.Sigmoid.apply(self)
+
+    def relu(self) -> Scalar:
+        return functions.ReLU.apply(self)
+
+    def tanh(self) -> Scalar:
+        return functions.Tanh.apply(self)
+        

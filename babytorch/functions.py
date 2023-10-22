@@ -100,7 +100,7 @@ class Exp(Function):
         return math.exp(a)
 
     def backward(ctx: Context, d_grad):
-        a = ctx.saved_tensors
+        (a,) = ctx.saved_tensors
         return a * d_grad
 
 
@@ -116,12 +116,13 @@ class Log(Function):
 
 class Tanh(Function):
     def forward(ctx: Context, a: float) -> float:
-        ctx.save_for_backward(a)
-        return operations.tanh(a)
+        tanh = operations.tanh(a)
+        ctx.save_for_backward(tanh)
+        return tanh
 
     def backward(ctx: Context, d_grad):
-        a = ctx.saved_tensors
-        return 1.0 - (operations.tanh(a) ** 2)
+        (tanh,) = ctx.saved_tensors
+        return (1 - tanh ** 2) * d_grad
 
 
 class Sigmoid(Function):
@@ -130,17 +131,15 @@ class Sigmoid(Function):
         return 1.0 / (1.0 + math.exp(-1 * a))
 
     def backward(ctx: Context, d_grad):
-        a = ctx.saved_tensors
+        (a,) = ctx.saved_tensors
         return a * (1 - a) * d_grad
 
 
 class ReLU(Function):
     def forward(ctx: Context, a: float) -> float:
-        ctx.save_for_backward(
-            a,
-        )
+        ctx.save_for_backward(a,)
         return 0 if a < 0 else a
 
     def backward(ctx: Context, d_grad):
-        a = ctx.saved_tensors
+        (a,) = ctx.saved_tensors
         return 0 if a <= 0 else d_grad
