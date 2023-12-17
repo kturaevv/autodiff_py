@@ -34,7 +34,6 @@ class FunctionInterface(ABC):
         ...
 
 
-# Constructors
 class Function(FunctionInterface):
     @classmethod
     def _forward(cls, ctx: Context, *vals):
